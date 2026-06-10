@@ -9,7 +9,7 @@ import requests
 import os
 
 app = Flask(__name__)
-CORS(app)  # Allow all origins — restrict to your domain in production
+CORS(app)
 
 # ── CONFIG ──────────────────────────────────────────
 YDL_OPTS_INFO = {
@@ -17,6 +17,14 @@ YDL_OPTS_INFO = {
     'no_warnings': True,
     'noplaylist': True,
     'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['android', 'web'],
+        }
+    },
+    'http_headers': {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 Chrome/112.0.0.0 Mobile Safari/537.36',
+    },
 }
 
 ALLOWED_FORMATS = ['1080', '720', '480', '360', 'audio']
@@ -39,7 +47,6 @@ def get_info():
         with yt_dlp.YoutubeDL(YDL_OPTS_INFO) as ydl:
             info = ydl.extract_info(url, download=False)
 
-        # Build quality options
         formats = []
         seen    = set()
 
@@ -48,19 +55,16 @@ def get_info():
             vcodec = fmt.get('vcodec', 'none')
             acodec = fmt.get('acodec', 'none')
 
-            # Video formats
             if height and vcodec != 'none':
                 label = f'{height}p'
                 if label not in seen:
                     seen.add(label)
                     formats.append({'label': label, 'url': fmt.get('url', '')})
 
-            # Audio only
             if vcodec == 'none' and acodec != 'none' and 'audio' not in seen:
                 seen.add('audio')
                 formats.append({'label': 'Audio Only (MP3)', 'url': fmt.get('url', '')})
 
-        # Fallback if no formats parsed
         if not formats:
             formats = [{'label': 'Best Quality', 'url': info.get('url', '')}]
 
@@ -70,7 +74,7 @@ def get_info():
             'duration':     info.get('duration', 0),
             'uploader':     info.get('uploader', ''),
             'platform':     info.get('extractor_key', ''),
-            'formats':      formats[:6],  # max 6 quality options
+            'formats':      formats[:6],
             'download_url': info.get('url', ''),
         })
 
@@ -87,7 +91,6 @@ def get_info():
 
 
 # ── PROXY DOWNLOAD ───────────────────────────────────
-# Streams the video through our server so the browser can download it
 @app.route('/download', methods=['POST'])
 def proxy_download():
     data     = request.get_json()
@@ -130,4 +133,3 @@ def proxy_download():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-      
