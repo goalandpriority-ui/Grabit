@@ -3,7 +3,7 @@
    Frontend logic for video download flow
    ============================================ */
 
-const BACKEND_URL = 'https://your-backend.onrender.com'; // Change after deploy
+const BACKEND_URL = 'https://grabit-fzi4.onrender.com';
 
 // ── NAV TOGGLE (mobile) ──
 const navToggle = document.querySelector('.nav-toggle');
